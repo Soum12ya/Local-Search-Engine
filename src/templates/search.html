@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Crazy Search Engine Prototype</title>
+    <style>
+        /* General Centering and Layout Reset */
+        body { 
+            font-family: sans-serif; 
+            margin: 0; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; /* Center everything horizontally */
+            min-height: 100vh; /* Full viewport height */
+            background-color: #f5f5f5;
+        }
+        
+        /* Main Search Container - Pushes content to the middle */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            /* Use margin-top to visually center the search bar */
+            margin-top: 25vh; 
+            margin-bottom: auto; 
+            width: 100%;
+            max-width: 600px; /* Limits the search bar width */
+            padding: 20px;
+        }
+        
+        h1 {
+            color: #1a0dab; /* Google blue-like color */
+            font-size: 24px;
+            margin-bottom: 30px;
+        }
+
+        /* Search Input and Button Styling */
+        .search-container { 
+            position: relative; 
+            display: flex; 
+            width: 100%;
+        }
+        #search_form {
+            display: flex;
+            width: 100%;
+            border: 1px solid #dfe1e5;
+            border-radius: 24px;
+            box-shadow: 0 1px 6px rgba(32,33,36,.28);
+            overflow: hidden; /* Contains the input and button */
+        }
+        #search_input { 
+            padding: 10px 15px; 
+            font-size: 16px; 
+            border: none;
+            width: 100%; 
+            outline: none;
+        }
+        .search-container button {
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .search-container button:hover {
+            background-color: #357ae8;
+        }
+
+        /* Results Section Styling */
+        .results-section {
+            margin-top: 50px;
+            width: 100%;
+            max-width: 600px; /* Matches the search container width */
+            text-align: left;
+            padding: 0 20px;
+        }
+        .result-box { 
+            background-color: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px; 
+            margin-bottom: 15px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .score { 
+            color: #008000; 
+            font-weight: bold; 
+        }
+
+        /* Autocomplete Dropdown Styling */
+        #suggestions_container {
+            position: absolute;
+            top: 100%; 
+            left: 0;
+            right: 0;
+            width: 100%; /* Match input width */
+            max-width: 600px;
+            background-color: white;
+            border: 1px solid #d4d4d4;
+            border-top: none;
+            z-index: 100;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        #suggestions_container ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        #suggestions_container li {
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        #suggestions_container li:hover {
+            background-color: #f1f1f1;
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- 1. MAIN CENTERED SEARCH AREA -->
+    <div class="main-content">
+        
+        <h1>Local Search Engine</h1>
+
+        <div class="search-container">
+            <!-- Search Form -->
+            <form method="POST" action="/" id="search_form">
+                <input type="text" id="search_input" name="query" placeholder="Enter your query..." 
+                       value="{{ query if query else '' }}" required autocomplete="off">
+                <button type="submit">Search</button>
+            </form>
+            
+            <!-- Suggestions will appear here -->
+            <div id="suggestions_container"></div>
+        </div>
+    </div>
+    
+    <!-- 2. RESULTS SECTION -->
+    <div class="results-section">
+        {% if query and results is defined %}
+            <h2>Results for "{{ query }}" (Found {{ results|length }} documents)</h2>
+            {% for result in results %}
+                <div class="result-box">
+                    <h3>{{ result.title }}</h3>
+                    <p>Relevance Score: <span class="score">{{ "%.4f" | format(result.score) }}</span></p>
+                </div>
+            {% endfor %}
+        {% elif query and results is defined and not results %}
+            <p>No documents matched the query "{{ query }}".</p>
+        {% endif %}
+    </div>
+
+    <!-- 
+    *** JAVASCRIPT: AUTCOMPLETE AND AJAX LOGIC ***
+    -->
+    <script>
+        const searchInput = document.getElementById('search_input');
+        const searchForm = document.getElementById('search_form');
+        const suggestionsContainer = document.getElementById('suggestions_container');
+        let timeout = null;
+
+        // Use keyup event to listen for every change in the input box
+        searchInput.addEventListener('keyup', function() {
+            const rawPrefix = searchInput.value;
+            clearTimeout(timeout); 
+
+            // Clear suggestions if input is too short
+            if (rawPrefix.length < 2) {
+                suggestionsContainer.innerHTML = ''; 
+                return;
+            }
+
+            // Debounce: Wait 200ms before sending the request
+            timeout = setTimeout(() => {
+                const prefix = encodeURIComponent(rawPrefix);
+                
+                // Fetch suggestions from the Flask API endpoint
+                fetch(`/suggest?prefix=${prefix}`)
+                    .then(response => {
+                        // Ensure the JSON import for Flask is used correctly
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        let html = '';
+                        if (data.length > 0) {
+                            html += '<ul>';
+                            data.forEach(term => {
+                                // Create clickable list item
+                                html += `<li onclick="fillSearch('${term}')">${term}</li>`;
+                            });
+                            html += '</ul>';
+                        }
+                        suggestionsContainer.innerHTML = html;
+                    })
+                    .catch(error => {
+                        console.error('Error fetching suggestions:', error);
+                        suggestionsContainer.innerHTML = '';
+                    });
+            }, 200); 
+        });
+
+        // Function to handle clicking on a suggestion
+        function fillSearch(term) {
+            searchInput.value = term; // Fill the search box
+            suggestionsContainer.innerHTML = ''; // Clear the dropdown
+            searchForm.submit(); // Automatically submit the search
+        }
+        
+        // Hide suggestions when clicking outside the input
+        document.addEventListener('click', function(event) {
+            if (event.target !== searchInput) {
+                suggestionsContainer.innerHTML = '';
+            }
+        });
+    </script>
+</body>
+</html>
