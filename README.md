@@ -20,11 +20,7 @@ The project showcases mastery in three key areas:
 
 **Project Architecture Diagram:**  
 <!-- Add your architecture diagram image here: -->
-![Architecture Diagram](path/to/architecture-diagram.png)
-
-**UML Diagram:**  
-<!-- Add your UML diagram image here: -->
-![UML Diagram](path/to/uml-diagram.png)
+<img width="1273" height="703" alt="architecture" src="https://github.com/user-attachments/assets/39d844eb-8017-4e8c-84aa-7a7c7429b0b1" />
 
 The system employs a classic pipeline architecture to separate the heavy, offline Indexing Phase from the fast, real-time Searching Phase.
 
@@ -45,7 +41,10 @@ The system employs a classic pipeline architecture to separate the heavy, offlin
 
 ### Application Preview  
 <!-- Add project output screenshot here: -->
-![Application Screenshot](path/to/output-photo.png)
+<img width="1912" height="947" alt="LSE_1" src="https://github.com/user-attachments/assets/5b8f2cc3-e08e-4c5c-bdeb-1be596bc1547" />
+<img width="1917" height="1002" alt="LSE_2" src="https://github.com/user-attachments/assets/1e25f6a7-4411-46fa-997b-ae1d00ec37a0" />
+<img width="1918" height="1001" alt="LSE_3" src="https://github.com/user-attachments/assets/e507bc00-4bfe-4189-bb1b-38dbeb469563" />
+
 
 The final application features a centered, modern interface with real-time Autocomplete functionality.
 
